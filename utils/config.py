@@ -10,7 +10,11 @@ DOC_IDS_PATH = "data/processed/doc_ids.pkl"
 FAISS_INDEX_PATH = "data/processed/faiss_index.index"
 
 # Embedding Model
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+# "multi-qa-MiniLM-L6-cos-v1" are fine-tuned on query-document pairs for retrieval — they give much better ranking alignment.
+EMBEDDING_MODEL_NAME = "multi-qa-mpnet-base-dot-v1"
+
+
+# EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
 
 TOP_K = 21  # Number of documents to retrieve for a query

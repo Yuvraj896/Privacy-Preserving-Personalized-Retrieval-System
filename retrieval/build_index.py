@@ -17,6 +17,9 @@ def build_faiss_index():
         embeddings = np.load(DOC_EMBEDDINGS_PATH)
         print(f"Loaded embeddings with shape: {embeddings.shape}")
 
+        faiss.normalize_L2(embeddings)
+        print("Normalized embeddings with L2 norm.")
+        
         # Load document IDs for creating mapping Index -> position of doc_id
         if not os.path.exists(DOC_IDS_PATH):
             raise FileNotFoundError(f"Document IDs file not found: {DOC_IDS_PATH}")

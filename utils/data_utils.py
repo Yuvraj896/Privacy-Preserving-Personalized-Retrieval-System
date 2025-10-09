@@ -2,7 +2,9 @@ import pandas as pd
 from sklearn.datasets import fetch_20newsgroups
 import os
 from utils.config import DOC_EMBEDDINGS_PATH, DOC_IDS_PATH, PROCESSED_DATA_PATH, PROCESSED_TRAIN_CSV, PROCESSED_TEST_CSV
-import nltk
+import re
+from nltk.corpus import stopwords
+
 
 def load_20newsgroups(subset= 'train'):
 
@@ -18,23 +20,29 @@ def load_20newsgroups(subset= 'train'):
     return documents
 
 
-# Preprocess Text
+"""
+Keep punctuation for structure.
+Keep stopwords (since SBERT handles them).
+Only lowercase + strip noise.
+"""
+
 def preprocess_text(text):
 
-    import re
-    from nltk.corpus import stopwords
-    if not isinstance(text, str):
-        text = ""
+    stop_words = set(stopwords.words('english'))
+
+    # Remove headers/footers/quotes
+    text = re.sub(r'(writes:|Subject:|From:|Lines:|Article:|Organization:).*', '', text)
+    text = re.sub(r'(>+).*', '', text)  # remove quoted lines
+
     # Lowercase
     text = text.lower()
+
     # Remove punctuation
-    text = re.sub(r'[^a-z0-9\s]', '', text)
-    # Remove extra spaces/newlines
-    text = ' '.join(text.split())
+    text = re.sub(r'[^a-z0-9\s]', ' ', text)
+
     # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    text = ' '.join([word for word in text.split() if word not in stop_words])
-    return text
+    words = [w for w in text.split() if w not in stop_words]
+    return ' '.join(words)
 
 
 # for saving the dataset
