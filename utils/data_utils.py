@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.datasets import fetch_20newsgroups
 import os
 from utils.config import DOC_EMBEDDINGS_PATH, DOC_IDS_PATH, PROCESSED_DATA_PATH, PROCESSED_TRAIN_CSV, PROCESSED_TEST_CSV
-
+import nltk
 
 def load_20newsgroups(subset= 'train'):
 
@@ -20,11 +20,20 @@ def load_20newsgroups(subset= 'train'):
 
 # Preprocess Text
 def preprocess_text(text):
-    if not isinstance(text, str):
-        text = "" 
 
-    text = text.lower()  # lowercase
-    text = ' '.join(text.split())  # remove extra spaces / newlines
+    import re
+    from nltk.corpus import stopwords
+    if not isinstance(text, str):
+        text = ""
+    # Lowercase
+    text = text.lower()
+    # Remove punctuation
+    text = re.sub(r'[^a-z0-9\s]', '', text)
+    # Remove extra spaces/newlines
+    text = ' '.join(text.split())
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    text = ' '.join([word for word in text.split() if word not in stop_words])
     return text
 
 
@@ -52,24 +61,46 @@ def save_processed_data(documents, save_path='data/processed/processed_20news.cs
 
 
 #pipeline
+# In data_utils.py
+
 def prepare_20newsgroups_dataset():
+    """
+    Loads train + test sets, combines them, assigns globally unique IDs,
+    processes text, and then saves them to separate CSVs.
+    """
+    train_docs_raw = load_20newsgroups(subset='train')
+    test_docs_raw = load_20newsgroups(subset='test')
     
-    #Loads train + test sets, combines them, and saves processed CSV
+    # Keep track of the split point
+    num_train_docs = len(train_docs_raw)
     
-    train_docs = load_20newsgroups(subset='train')
-    test_docs = load_20newsgroups(subset='test')
+    all_docs_raw = train_docs_raw + test_docs_raw
     
-    all_docs = train_docs + test_docs
-    for doc in all_docs:
-        doc['text'] = preprocess_text(doc['text'])
-
-    #split
-    train_docs_processed = all_docs[:len(train_docs)]
-    test_docs_processed  = all_docs[len(train_docs):]
-
-    save_processed_data(train_docs_processed, PROCESSED_TRAIN_CSV)
-    save_processed_data(test_docs_processed, PROCESSED_TEST_CSV )
-
+    data_list = []
+    # Create one master list with globally unique IDs
+    for idx, doc in enumerate(all_docs_raw):
+        processed_text = preprocess_text(doc['text'])
+        data_list.append({
+            'doc_id': idx,  # This ID is now unique across the entire dataset
+            'text': processed_text,
+            'label': doc['label']
+        })
+        
+    # Create a single DataFrame
+    all_df = pd.DataFrame(data_list)
+    
+    # Split the DataFrame back into train and test sets
+    train_df = all_df.iloc[:num_train_docs]
+    test_df = all_df.iloc[num_train_docs:]
+    
+    # --- Save the data using pandas, which is simpler ---
+    os.makedirs(os.path.dirname(PROCESSED_TRAIN_CSV), exist_ok=True)
+    
+    train_df.to_csv(PROCESSED_TRAIN_CSV, index=False)
+    print(f"Processed train data saved to {PROCESSED_TRAIN_CSV}")
+    
+    test_df.to_csv(PROCESSED_TEST_CSV, index=False)
+    print(f"Processed test data saved to {PROCESSED_TEST_CSV}")
 
 
 

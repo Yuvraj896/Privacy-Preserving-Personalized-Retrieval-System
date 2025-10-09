@@ -3,7 +3,7 @@ import numpy as np
 import os
 from retrieval.query_retrieval import load_faiss_index, load_embedding_model, search_query
 from utils.metrics import precision_at_k, recall_at_k, ndcg_at_k
-from utils.config import TOP_K, PROCESSED_TEST_CSV
+from utils.config import TOP_K, PROCESSED_TEST_CSV, PROCESSED_TRAIN_CSV
 import json
 
 """
@@ -20,65 +20,67 @@ After : we will consider doc with same related doc
 
 
 def evaluate_baseline():
-    # Load FAISS index and doc_ids
-    index, train_doc_ids = load_faiss_index()
-
-    # Load embedding model
+    index, all_doc_ids = load_faiss_index()
     model = load_embedding_model()
-
-    # Load test data
-    test_df = pd.read_csv(PROCESSED_TEST_CSV)
     
     precisions, recalls, ndcgs = [], [], []
     debug_results = []
 
+    # --- Create the complete mappings here ---
+    train_df = pd.read_csv(PROCESSED_TRAIN_CSV)
+    test_df = pd.read_csv(PROCESSED_TEST_CSV)
+    all_df = pd.concat([train_df, test_df], ignore_index=True)
+    doc_id_to_text = dict(zip(all_df['doc_id'], all_df['text']))
+    doc_id_to_label = dict(zip(all_df['doc_id'], all_df['label']))
+    # --- Mappings are now complete ---
+
+
+    # Limit to first 20 queries for fast debugging
     for i, row in test_df.iterrows():
-        # if i > 10:
+        # if i >= 20:
         #     break
 
         query_text = str(row['text'])
+        query_doc_id = row['doc_id'] # Get the ID of the query document
+        query_label = row['label']
+
         if query_text.lower() == "nan" or not query_text.strip():
             continue
 
-        relevant_doc_ids = test_df[test_df['label'] == row['label']]['doc_id'].tolist()
-        results = search_query(query_text, index, train_doc_ids, model, top_k=TOP_K)
-        retrieved_ids = [r['doc_id'] for r in results]
+        relevant_doc_ids = test_df[test_df['label'] == query_label]['doc_id'].tolist()
+        
+        # We must also remove the query doc from the list of relevant items, 
+        # as a document cannot be relevant to itself in this context.
+        if query_doc_id in relevant_doc_ids:
+            relevant_doc_ids.remove(query_doc_id)
+        
+
+        results = search_query(query_text, index, all_doc_ids, model, doc_id_to_text, doc_id_to_label, top_k=TOP_K)
+        retrieved_ids = [r['doc_id'] for r in results if r['doc_id'] != query_doc_id]  # Exclude the query doc itself
+        retrieved_ids = retrieved_ids[:TOP_K]  # Limit to TOP_K results
+
 
         precisions.append(precision_at_k(retrieved_ids, relevant_doc_ids, TOP_K))
         recalls.append(recall_at_k(retrieved_ids, relevant_doc_ids, TOP_K))
         ndcgs.append(ndcg_at_k(retrieved_ids, relevant_doc_ids, TOP_K))
 
-        debug_results.append({
-            'query_text': query_text,
-            'query_doc_id': row['doc_id'],
-            'query_label': row['label'],
-            'retrieved_doc_ids': [r['doc_id'] for r in results],
-            'retrieved_texts': [r['text'] for r in results],
-            'retrieved_scores': [r['score'] for r in results],
-            'relevant_doc_ids': relevant_doc_ids
-        })
+        # Print sample results for inspection
+
+        if i < 5:
+            print(f"\nQuery {i}: {query_text[:60]}...")
+            print(f"Retrieved doc IDs: {retrieved_ids}")
+            print(f"Relevant doc IDs: {relevant_doc_ids[:10]}...")
 
     avg_precision = sum(precisions) / len(precisions)
     avg_recall = sum(recalls) / len(recalls)
     avg_ndcg = sum(ndcgs) / len(ndcgs)
 
-    print(f"\n--- Centralized IR Baseline Metrics ---")
+    print(f"\n--- Centralized IR Baseline Metrics (first 20 queries) ---")
     print(f"Average Precision@{TOP_K}: {avg_precision:.4f}")
     print(f"Average Recall@{TOP_K}:    {avg_recall:.4f}")
     print(f"Average NDCG@{TOP_K}:      {avg_ndcg:.4f}")
 
-    # # Save to CSV (existing)
-    # debug_file_csv = "results/debug_retrievals.csv"
-    # os.makedirs(os.path.dirname(debug_file_csv), exist_ok=True)
-    # pd.DataFrame(debug_results).to_csv(debug_file_csv, index=False)
-    # print(f"Debugging info saved to {debug_file_csv}")
-
-    # # Save to JSON (readable)
-    # debug_file_json = "results/debug_retrievals_readable.json"
-    # with open(debug_file_json, "w", encoding="utf-8") as f:
-    #     json.dump(debug_results, f, indent=4, ensure_ascii=False)
-    # print(f"Readable debugging info saved to {debug_file_json}")
-
+    
 if __name__ == "__main__":
     evaluate_baseline()
 

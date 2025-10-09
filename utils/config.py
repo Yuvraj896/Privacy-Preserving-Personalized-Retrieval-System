@@ -1,4 +1,3 @@
-
 # File paths
 RAW_DATA_PATH = "data/raw/20news.csv"           # Not used now, we use sklearn fetch
 PROCESSED_DATA_PATH = "data/processed/processed_20news.csv"
@@ -14,4 +13,4 @@ FAISS_INDEX_PATH = "data/processed/faiss_index.index"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
 
-TOP_K = 20    # Number of documents to retrieve for a query
+TOP_K = 21  # Number of documents to retrieve for a query

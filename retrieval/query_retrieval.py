@@ -4,16 +4,10 @@ import os
 import pickle
 from sentence_transformers import SentenceTransformer
 from utils.config import DOC_EMBEDDINGS_PATH, DOC_IDS_PATH, FAISS_INDEX_PATH, EMBEDDING_MODEL_NAME, TOP_K
-
+from utils.data_utils import preprocess_text 
 
 import pandas as pd
 
-# Load processed documents
-df = pd.read_csv('data/processed/processed_20news_train.csv')
-
-# Create mappings
-doc_id_to_text = dict(zip(df['doc_id'], df['text']))
-doc_id_to_label = dict(zip(df['doc_id'], df['label']))
 
 """ Know this to understand the code
     we made dense vector embeddings for every document in train set using Sentence Transformer
@@ -55,7 +49,7 @@ def load_embedding_model():
         raise RuntimeError(f"Error loading embedding model: {e}")
 
 
-def search_query(query_text, index, doc_ids, model, top_k=TOP_K):
+def search_query(query_text, index, doc_ids, model, doc_id_to_text, doc_id_to_label, top_k=TOP_K):
     """
     Input:
         query_text : str -> user query
@@ -75,7 +69,14 @@ def search_query(query_text, index, doc_ids, model, top_k=TOP_K):
         if query_embedding.ndim == 1:
             query_embedding = query_embedding.reshape(1, -1)
     else:
-        query_embedding = model.encode([query_text], convert_to_numpy=True)
+        processed_query = preprocess_text(query_text)
+        if processed_query.lower() == "nan":
+            raise ValueError("Query text is 'nan' after preprocessing!")
+        
+        # Encode query text to get its embedding
+        query_embedding = model.encode([processed_query], convert_to_numpy=True)
+
+        #normalize
         faiss.normalize_L2(query_embedding)  # in-place normalization
 
     
@@ -91,8 +92,9 @@ def search_query(query_text, index, doc_ids, model, top_k=TOP_K):
             'doc_id': doc_id,
             'score': float(dist),
             'index': idx, # optional: position in embeddings array
-            'text': doc_id_to_text[doc_id],   # requires a dict doc_id → text
-            'label': doc_id_to_label[doc_id]       # requires a dict doc_id → label
+            'text': doc_id_to_text.get(doc_id, "Text not found"),  # Use .get for safety
+            'label': doc_id_to_label.get(doc_id, "Label not found")
+
         })
     return results
 
