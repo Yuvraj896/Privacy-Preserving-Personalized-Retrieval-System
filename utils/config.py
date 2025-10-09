@@ -13,4 +13,5 @@ FAISS_INDEX_PATH = "data/processed/faiss_index.index"
 # Embedding Model
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
-TOP_K = 5    # Number of documents to retrieve for a query
+
+TOP_K = 20    # Number of documents to retrieve for a query

@@ -5,6 +5,27 @@ import pickle
 from sentence_transformers import SentenceTransformer
 from utils.config import DOC_EMBEDDINGS_PATH, DOC_IDS_PATH, FAISS_INDEX_PATH, EMBEDDING_MODEL_NAME, TOP_K
 
+
+import pandas as pd
+
+# Load processed documents
+df = pd.read_csv('data/processed/processed_20news_train.csv')
+
+# Create mappings
+doc_id_to_text = dict(zip(df['doc_id'], df['text']))
+doc_id_to_label = dict(zip(df['doc_id'], df['label']))
+
+""" Know this to understand the code
+    we made dense vector embeddings for every document in train set using Sentence Transformer
+    then stored those inside FAISS (fast vector search engine)
+
+    FAISS index position → which document (ID) it represents.
+"""
+
+# index = contains all document embeddings in a compressed and searchable structure.
+# doc_ids = keeps the mapping
+
+
 def load_faiss_index():
     if not os.path.exists(FAISS_INDEX_PATH):
         raise FileNotFoundError(f"FAISS index not found: {FAISS_INDEX_PATH}")
@@ -16,7 +37,7 @@ def load_faiss_index():
     if not os.path.exists(DOC_IDS_PATH):
         raise FileNotFoundError(f"Document IDs file not found: {DOC_IDS_PATH}")
     
-    # Load doc_ids
+    # Load doc_ids from the pkl file
     with open(DOC_IDS_PATH, 'rb') as f:
         doc_ids = pickle.load(f)
     print(f"{len(doc_ids)} document IDs loaded.")
@@ -25,6 +46,7 @@ def load_faiss_index():
 
 
 def load_embedding_model():
+    #Loads a pre-trained Sentence-BERT (SBERT) model, e.g. all-MiniLM-L6-v2.
     try:
         model = SentenceTransformer(EMBEDDING_MODEL_NAME)
         print(f"Embedding model '{EMBEDDING_MODEL_NAME}' loaded.")
@@ -48,9 +70,18 @@ def search_query(query_text, index, doc_ids, model, top_k=TOP_K):
     if not query_text.strip():
         raise ValueError("Query text is empty!")
 
-    query_embedding = model.encode([query_text])
+    if isinstance(query_text, np.ndarray):
+        query_embedding = query_text
+        if query_embedding.ndim == 1:
+            query_embedding = query_embedding.reshape(1, -1)
+    else:
+        query_embedding = model.encode([query_text], convert_to_numpy=True)
+        faiss.normalize_L2(query_embedding)  # in-place normalization
+
     
     # Search FAISS index
+    """ this will search the query_embedding with all compressed doc vectors as FAISS idx, returns the index and distance of the most close docs"""
+
     distances, indices = index.search(query_embedding, top_k)
 
     results = []
@@ -59,7 +90,9 @@ def search_query(query_text, index, doc_ids, model, top_k=TOP_K):
         results.append({
             'doc_id': doc_id,
             'score': float(dist),
-            'index': idx  # optional: position in embeddings array
+            'index': idx, # optional: position in embeddings array
+            'text': doc_id_to_text[doc_id],   # requires a dict doc_id → text
+            'label': doc_id_to_label[doc_id]       # requires a dict doc_id → label
         })
     return results
 
@@ -74,4 +107,28 @@ if __name__ == "__main__":
 
     print("\nTop Results:")
     for r in results:
+        print(f"DocID: {r['doc_id']}")
+        print(f"Score: {r['score']:.4f}")
+        print(f"index: {r['index']}")
+        print(f"text: {r['text']}")
+        print(f"label: {r['label']}")
+        print("\n")
+
+
+    query = "computer graphics image rendering"
+    index , train_doc_ids = load_faiss_index()
+    results = search_query(query, index, train_doc_ids, model)
+
+    print("\nTop Results:")
+    for r in results:
         print(f"DocID: {r['doc_id']}, Score: {r['score']:.4f}")
+    
+#     FAISS index loaded.
+# 11314 document IDs loaded.
+
+# Top Results:
+# DocID: 8148, Score: 0.7120
+# DocID: 9041, Score: 0.9142
+# DocID: 4589, Score: 1.0087
+# DocID: 8378, Score: 1.0161
+# DocID: 11082, Score: 1.0183

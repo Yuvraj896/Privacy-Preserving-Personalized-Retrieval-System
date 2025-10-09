@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import faiss
 import pickle
 from sentence_transformers import SentenceTransformer
 from utils.config import DOC_EMBEDDINGS_PATH, DOC_IDS_PATH, PROCESSED_DATA_PATH, PROCESSED_TRAIN_CSV
@@ -25,6 +26,10 @@ def generate_document_embeddings():
     # 3Generate embeddings
     embeddings = model.encode(df['text'].tolist(), show_progress_bar=True)
     embeddings = np.array(embeddings)
+    
+    #normalize l2
+    faiss.normalize_L2(embeddings)
+
     print(f"Generated embeddings with shape: {embeddings.shape}")
 
     # Save embeddings

@@ -27,7 +27,9 @@ def build_faiss_index():
         print(f"Loaded {len(doc_ids)} document IDs.")
 
         # Create FAISS index
+        
         dim = embeddings.shape[1]  # embedding dimension
+
         index = faiss.IndexFlatL2(dim)  # exact search using L2 distance
         print(f"FAISS index created with dimension {dim}.")
 
