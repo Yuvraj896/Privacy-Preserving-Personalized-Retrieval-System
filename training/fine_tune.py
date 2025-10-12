@@ -84,7 +84,7 @@ def main():
               epochs=NUM_EPOCHS,
               warmup_steps=warmup_steps,
               evaluator=evaluator,
-              evaluation_steps=int(len(train_dataloader) * 0.1),
+            #   evaluation_steps=int(len(train_dataloader) * 0.1),
               output_path=FINETUNED_MODEL_PATH,
               save_best_model=True,
               show_progress_bar=True)
