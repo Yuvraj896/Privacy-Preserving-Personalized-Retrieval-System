@@ -2,6 +2,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 
 from sentence_transformers.readers import InputExample
+nltk.download('punkt_tab')
 
 # Ensure the 'punkt' tokenizer is available
 try:
@@ -58,6 +59,6 @@ def prepare_training_data(queries: dict, qrels: dict, corpus: dict) -> list:
                     passage_text = corpus[passage_id]["text"]
                     train_examples.append(InputExample(texts=[query_text, passage_text]))
 
-                    
+
     print(f"Created {len(train_examples)} (query, positive_passage) pairs.")
     return train_examples

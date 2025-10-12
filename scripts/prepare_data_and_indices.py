@@ -1,9 +1,10 @@
 import os
 import sys
 import pickle
-
-# Add parent directory to path to allow imports from other folders
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import nltk
+# # Add parent directory to path to allow imports from other folders
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+nltk.download('punkt_tab')
 
 from beir import util as beir_util
 from beir.datasets.data_loader import GenericDataLoader
