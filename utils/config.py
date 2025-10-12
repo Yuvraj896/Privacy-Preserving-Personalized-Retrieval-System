@@ -1,16 +1,20 @@
-# File paths
-RAW_DATA_PATH = "data/raw/20news.csv"           # Not used now, we use sklearn fetch
-PROCESSED_DATA_PATH = "data/processed/processed_20news.csv"
+# --- Data & Model Settings ---
+DATASET_NAME = "nfcorpus"
+BASE_MODEL = 'all-mpnet-base-v2'
+FINETUNED_MODEL_PATH = 'models/checkpoints/nfcorpus-finetuned'
 
-PROCESSED_TRAIN_CSV = "data/processed/processed_20news_train.csv"
-PROCESSED_TEST_CSV  = "data/processed/processed_20news_test.csv"
+# --- Paths ---
+PROCESSED_DATA_PATH = 'data/processed'
+PLOTS_PATH = 'results/plots'
+BM25_INDEX_PATH = 'models/checkpoints/bm25_index.pkl'
 
-DOC_EMBEDDINGS_PATH = "data/processed/doc_embeddings.npy"
-DOC_IDS_PATH = "data/processed/doc_ids.pkl"
-FAISS_INDEX_PATH = "data/processed/faiss_index.index"
+# --- Chunking Settings ---
+CHUNK_NUM_SENTENCES = 5
+CHUNK_OVERLAP = 2
 
-# Embedding Model
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+# --- Fine-Tuning Settings ---
+TRAIN_BATCH_SIZE = 16
+NUM_EPOCHS = 5
+LEARNING_RATE = 2e-5
 
-
-TOP_K = 21  # Number of documents to retrieve for a query
+EVAL_K_VALUES = [10,20]

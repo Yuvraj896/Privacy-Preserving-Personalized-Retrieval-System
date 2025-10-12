@@ -1,108 +1,63 @@
-import pandas as pd
-from sklearn.datasets import fetch_20newsgroups
-import os
-from utils.config import DOC_EMBEDDINGS_PATH, DOC_IDS_PATH, PROCESSED_DATA_PATH, PROCESSED_TRAIN_CSV, PROCESSED_TEST_CSV
 import nltk
+from nltk.tokenize import sent_tokenize
 
-def load_20newsgroups(subset= 'train'):
+from sentence_transformers.readers import InputExample
 
-    #returns a list of dic : {'text': ..., 'label': ...}
-    data = fetch_20newsgroups(subset=subset, remove=('headers', 'footers', 'quotes'))
+# Ensure the 'punkt' tokenizer is available
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    print("Downloading nltk 'punkt' tokenizer for sentence splitting...")
+    nltk.download('punkt')
+
+def chunk_text(text: str, num_sentences: int, overlap: int) -> list[str]:
+    """Splits a long text into smaller, overlapping chunks of sentences to fit model input limits.(2 chunked sentences can have meaning
+    we capture it by having another chunk with overlap of sentences)"""
+
+    sentences = sent_tokenize(text)
+    if not sentences:
+        return []
+
+    chunks = []
+    step = num_sentences - overlap
+    if step <= 0:
+        step = 1 # Ensure we always move forward
+
+    for i in range(0, len(sentences), step):
+        chunk = " ".join(sentences[i:i + num_sentences])
+        chunks.append(chunk)
     
-    documents = []
-    for i in range(len(data.data)):
-        text = data.data[i]
-        label = data.target[i]  # numeric label for the category
-        documents.append({'text': text, 'label': label})
-    
-    return documents
+    return chunks
 
 
-# Preprocess Text
-def preprocess_text(text):
+def prepare_training_data(queries: dict, qrels: dict, corpus: dict) -> list:
 
-    import re
-    from nltk.corpus import stopwords
-    if not isinstance(text, str):
-        text = ""
-    # Lowercase
-    text = text.lower()
-    # Remove punctuation
-    text = re.sub(r'[^a-z0-9\s]', '', text)
-    # Remove extra spaces/newlines
-    text = ' '.join(text.split())
-    # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    text = ' '.join([word for word in text.split() if word not in stop_words])
-    return text
-
-
-# for saving the dataset
-def save_processed_data(documents, save_path='data/processed/processed_20news.csv'):
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
-    tmp_save_path = save_path + ".tmp"
-    
-    data_list = []
-    for idx, doc in enumerate(documents):
-        processed_text = preprocess_text(doc['text'])
-        data_list.append({
-            'doc_id': idx,
-            'text': processed_text,
-            'label': doc['label']
-        })
-    
-    df = pd.DataFrame(data_list)
-    df.to_csv(tmp_save_path, index=False)
-    
-    # Only rename once fully written
-    os.replace(tmp_save_path, save_path)
-    print(f"Processed data saved to {save_path}")
-
-
-#pipeline
-# In data_utils.py
-
-def prepare_20newsgroups_dataset():
     """
-    Loads train + test sets, combines them, assigns globally unique IDs,
-    processes text, and then saves them to separate CSVs.
+    Logic : Each query is paired with its relevant passages from the corpus based on qrels.
+    first search the relevant doc id for the query,
+    then find the passage id, if the doc id of passage is relevant we say the passage is relevant and create a pair.
     """
-    train_docs_raw = load_20newsgroups(subset='train')
-    test_docs_raw = load_20newsgroups(subset='test')
-    
-    # Keep track of the split point
-    num_train_docs = len(train_docs_raw)
-    
-    all_docs_raw = train_docs_raw + test_docs_raw
-    
-    data_list = []
-    # Create one master list with globally unique IDs
-    for idx, doc in enumerate(all_docs_raw):
-        processed_text = preprocess_text(doc['text'])
-        data_list.append({
-            'doc_id': idx,  # This ID is now unique across the entire dataset
-            'text': processed_text,
-            'label': doc['label']
-        })
-        
-    # Create a single DataFrame
-    all_df = pd.DataFrame(data_list)
-    
-    # Split the DataFrame back into train and test sets
-    train_df = all_df.iloc[:num_train_docs]
-    test_df = all_df.iloc[num_train_docs:]
-    
-    # --- Save the data using pandas, which is simpler ---
-    os.makedirs(os.path.dirname(PROCESSED_TRAIN_CSV), exist_ok=True)
-    
-    train_df.to_csv(PROCESSED_TRAIN_CSV, index=False)
-    print(f"Processed train data saved to {PROCESSED_TRAIN_CSV}")
-    
-    test_df.to_csv(PROCESSED_TEST_CSV, index=False)
-    print(f"Processed test data saved to {PROCESSED_TEST_CSV}")
+    doc_to_passages = {}
+    for passage_id in corpus.keys():
+        doc_id = '-'.join(passage_id.split('-')[:-1])
+        if doc_id not in doc_to_passages:
+            doc_to_passages[doc_id] = []
+        doc_to_passages[doc_id].append(passage_id)
 
+    # Step 2: Create training examples efficiently using the map
+    train_examples = []
+    for query_id, query_text in queries.items():
+        relevant_doc_ids = {doc_id for doc_id, score in qrels.get(query_id, {}).items() if score > 0}
+        if not relevant_doc_ids:
+            continue
 
+        for doc_id in relevant_doc_ids:
+            # Fast lookup instead of a slow, nested loop
+            if doc_id in doc_to_passages:
+                for passage_id in doc_to_passages[doc_id]:
+                    passage_text = corpus[passage_id]["text"]
+                    train_examples.append(InputExample(texts=[query_text, passage_text]))
 
-#run
-prepare_20newsgroups_dataset()
+                    
+    print(f"Created {len(train_examples)} (query, positive_passage) pairs.")
+    return train_examples
