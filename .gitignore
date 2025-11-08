@@ -4,10 +4,7 @@ __pycache__/
 *$py.class
 
 # Virtual environment
-venv/
-env/
-ENV/
-.venv 
+irvenv/
 
 # Data files
 data/raw/
@@ -30,3 +27,7 @@ Thumbs.db
 
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints/
+
+data/
+datasets/
+models/checkpoints/nfcorpus-finetuned/
