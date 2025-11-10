@@ -14,7 +14,7 @@ from sentence_transformers.readers import InputExample
 from sentence_transformers.datasets import NoDuplicatesDataLoader
 from sentence_transformers.evaluation import InformationRetrievalEvaluator
 
-from utils.data_utils import prepare_training_data
+from utils.data_utils import prepare_training_data_pairs
 from utils.config import PROCESSED_DATA_PATH, BASE_MODEL, FINETUNED_MODEL_PATH, TRAIN_BATCH_SIZE, NUM_EPOCHS
 
 def main():
@@ -48,7 +48,8 @@ def main():
     # --- 2. Prepare Training & Validation Data ---
     """Prepares training data for fine-tuning the SentenceTransformer model using MultipleNegativesRankingLoss.
     Each query is paired with its relevant passages from the corpus based on qrels."""
-    train_examples = prepare_training_data(queries, qrels, corpus)
+    train_examples = prepare_training_data_pairs(corpus, queries, qrels)
+
     if not train_examples:
         print("No training examples found. Exiting.")
         return  

@@ -1,7 +1,7 @@
 # --- Data & Model Settings ---
 DATASET_NAME = "nfcorpus"
 BASE_MODEL = 'all-mpnet-base-v2'
-FINETUNED_MODEL_PATH = 'models/checkpoints/nfcorpus-finetuned'
+FINETUNED_MODEL = 'models/checkpoints/nfcorpus-finetuned'
 
 # --- Paths ---
 PROCESSED_DATA_PATH = 'data/processed'
