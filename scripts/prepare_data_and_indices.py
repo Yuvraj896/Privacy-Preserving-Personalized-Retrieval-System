@@ -11,7 +11,7 @@ from beir.datasets.data_loader import GenericDataLoader
 
 from utils.config import DATASET_NAME, PROCESSED_DATA_PATH, CHUNK_NUM_SENTENCES, CHUNK_OVERLAP
 from utils.data_utils import chunk_text
-from retrieval.indexing import build_bm25_index
+from retrieval.indexing import build_bm_index
 
 
 def download_and_process_data():
@@ -66,7 +66,7 @@ def main():
     corpus, corpus_docs_list, passage_corpus, passage_to_doc_id_map = download_and_process_data()
     # --- 4. Build and Save BM25 Index ---
     # This function is in your retrieval/indexing.py file
-    build_bm25_index(passage_corpus)
+    build_bm_index(passage_corpus)
     
     print("\n--- Data preparation and BM25 indexing complete. ---")
     print("You can now run 'python training/fine_tune.py'")

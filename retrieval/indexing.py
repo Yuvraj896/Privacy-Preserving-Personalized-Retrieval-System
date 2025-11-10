@@ -6,7 +6,7 @@ from nltk.corpus import stopwords
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
 
-from utils.config import BM25_INDEX_PATH, FINETUNED_MODEL_PATH
+from utils.config import BM25_INDEX_PATH, FINETUNED_MODEL
 
 def remove_stopwords_from_text(text,stop_words):
     """Cleans and tokenizes text for BM25."""

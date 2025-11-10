@@ -5,7 +5,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from beir.retrieval.evaluation import EvaluateRetrieval
 
-from utils.config import PROCESSED_DATA_PATH, BM25_INDEX_PATH, FINETUNED_MODEL_PATH, BASE_MODEL, EVAL_K_VALUES
+from utils.config import PROCESSED_DATA_PATH, BM25_INDEX_PATH, FINETUNED_MODEL, BASE_MODEL, EVAL_K_VALUES
 from retrieval.indexing import setup_dense_retriever
 from retrieval.search_bm25 import search_bm25, run_dense_search
 from utils.evaluation import evaluate_and_plot
@@ -59,11 +59,11 @@ def main():
     # ===================================================================
     # 🎯 3. Fine-Tuned Dense Retriever
     # ===================================================================
-    print(f"\n🏋️ Loading fine-tuned model from '{FINETUNED_MODEL_PATH}' ...")
-    fine_tuned_model = SentenceTransformer(FINETUNED_MODEL_PATH, device=device)
+    print(f"\n🏋️ Loading fine-tuned model from '{FINETUNED_MODEL}' ...")
+    fine_tuned_model = SentenceTransformer(FINETUNED_MODEL, device=device)
 
     print("\nEncoding all passages with fine-tuned model ...")
-    fine_tuned_passage_emb = setup_dense_retriever(corpus, FINETUNED_MODEL_PATH, device)
+    fine_tuned_passage_emb = setup_dense_retriever(corpus, FINETUNED_MODEL, device)
 
     print("\n🔍 Running Fine-Tuned Dense retrieval ...")
     fine_tuned_dense_results = run_dense_search(queries, fine_tuned_model, corpus, fine_tuned_passage_emb)

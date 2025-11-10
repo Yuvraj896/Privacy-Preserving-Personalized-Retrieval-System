@@ -15,7 +15,7 @@ from sentence_transformers.datasets import NoDuplicatesDataLoader
 from sentence_transformers.evaluation import InformationRetrievalEvaluator
 
 from utils.data_utils import prepare_training_data_pairs
-from utils.config import PROCESSED_DATA_PATH, BASE_MODEL, FINETUNED_MODEL_PATH, TRAIN_BATCH_SIZE, NUM_EPOCHS
+from utils.config import PROCESSED_DATA_PATH, BASE_MODEL, FINETUNED_MODEL, TRAIN_BATCH_SIZE, NUM_EPOCHS
 
 def main():
     """
@@ -86,13 +86,13 @@ def main():
               warmup_steps=warmup_steps,
               evaluator=evaluator,
             #   evaluation_steps=int(len(train_dataloader) * 0.1),
-              output_path=FINETUNED_MODEL_PATH,
+              output_path=FINETUNED_MODEL,
               save_best_model=True,
               show_progress_bar=True)
                    
     end_time = time.time()
     print(f"--- Fine-tuning complete in {str(timedelta(seconds=end_time - start_time))} ---")
-    print(f"Best model saved to '{FINETUNED_MODEL_PATH}'")
+    print(f"Best model saved to '{FINETUNED_MODEL}'")
 
 if __name__ == "__main__":
     main()
