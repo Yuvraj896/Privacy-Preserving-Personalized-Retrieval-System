@@ -48,6 +48,8 @@ def download_and_process_data():
     print(f"\nSaving processed data to '{PROCESSED_DATA_PATH}'...")
     os.makedirs(PROCESSED_DATA_PATH, exist_ok=True)
     
+    with open(os.path.join(PROCESSED_DATA_PATH, "original_corpus.pkl"), "wb") as f:
+        pickle.dump(corpus, f)
     with open(os.path.join(PROCESSED_DATA_PATH, "corpus_passages.pkl"), "wb") as f:
         pickle.dump(passage_corpus, f)
     with open(os.path.join(PROCESSED_DATA_PATH, "queries.pkl"), "wb") as f:
@@ -66,7 +68,7 @@ def main():
     corpus, corpus_docs_list, passage_corpus, passage_to_doc_id_map = download_and_process_data()
     # --- 4. Build and Save BM25 Index ---
     # This function is in your retrieval/indexing.py file
-    build_bm_index(passage_corpus)
+    build_bm_index(corpus_docs_list)
     
     print("\n--- Data preparation and BM25 indexing complete. ---")
     print("You can now run 'python training/fine_tune.py'")

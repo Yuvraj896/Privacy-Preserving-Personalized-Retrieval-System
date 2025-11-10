@@ -24,6 +24,8 @@ def main():
 
     # --- 2. Load Data and Artifacts ---
     print("\n📦 Loading all artifacts for final evaluation ...")
+    with open(os.path.join(PROCESSED_DATA_PATH, "orignal_corpus.pkl"), "rb") as f:
+        orignal_corpus = pickle.load(f)
     with open(os.path.join(PROCESSED_DATA_PATH, "corpus_passages.pkl"), "rb") as f:
         corpus = pickle.load(f)
     with open(os.path.join(PROCESSED_DATA_PATH, "queries.pkl"), "rb") as f:
@@ -43,7 +45,7 @@ def main():
     # 🧱 1. BM25 Retrieval (Baseline)
     # ===================================================================
     print("\n🔍 Running BM25 retrieval ...")
-    bm25_results = search_bm25(queries, bm25, corpus, k=max(EVAL_K_VALUES))
+    bm25_results = search_bm25(queries, bm25, orignal_corpus, k=max(EVAL_K_VALUES))
     all_results['BM25 (Passages)'] = bm25_results
 
     # ===================================================================
