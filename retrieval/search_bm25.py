@@ -8,7 +8,7 @@ def remove_stopwords_from_text(text, stop_words):
     """Cleans and tokenizes text for BM25."""
     return [word for word in text.lower().split() if word.isalnum() and word not in stop_words]
 
-def search_bm25(queries, bm25, corpus, k):
+def search_bm25(queries, bm25, corpus, k=max([10,20])):
     try:
         nltk.data.find('corpora/stopwords')
     except LookupError:
