@@ -43,7 +43,7 @@ def main():
     # 🧱 1. BM25 Retrieval (Baseline)
     # ===================================================================
     print("\n🔍 Running BM25 retrieval ...")
-    bm25_results = search_bm25(queries, bm25, corpus)
+    bm25_results = search_bm25(queries, bm25, corpus, k=max(EVAL_K_VALUES))
     all_results['BM25 (Passages)'] = bm25_results
 
     # ===================================================================
