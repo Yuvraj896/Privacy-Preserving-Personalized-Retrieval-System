@@ -5,9 +5,11 @@ import torch
 from sentence_transformers import SentenceTransformer
 from beir.retrieval.evaluation import EvaluateRetrieval
 
-from utils.config import PROCESSED_DATA_PATH, BM25_INDEX_PATH, FINETUNED_MODEL, BASE_MODEL, EVAL_K_VALUES
+from utils.config import PROCESSED_DATA_PATH, BM25_INDEX_PATH, FINETUNED_MODEL, BASE_MODEL, EVAL_K_VALUES, CHUNK_NUM_SENTENCES, CHUNK_OVERLAP
 from retrieval.indexing import setup_dense_retriever
-from retrieval.search_bm25 import search_bm25, run_dense_search
+from retrieval.search_bm25 import search_bm25
+from retrieval.search_dense import run_dense_search
+from utils.data_utils import chunk_text
 from utils.evaluation import evaluate_and_plot
 
 
@@ -24,8 +26,10 @@ def main():
 
     # --- 2. Load Data and Artifacts ---
     print("\n📦 Loading all artifacts for final evaluation ...")
-    with open(os.path.join(PROCESSED_DATA_PATH, "orignal_corpus.pkl"), "rb") as f:
+    with open(os.path.join(PROCESSED_DATA_PATH, "original_corpus.pkl"), "rb") as f:
         orignal_corpus = pickle.load(f)
+    with open(os.path.join(PROCESSED_DATA_PATH, "passage_to_doc_id.pkl"), "rb") as f:
+        passage_to_doc_id_map = pickle.load(f)
     with open(os.path.join(PROCESSED_DATA_PATH, "corpus_passages.pkl"), "rb") as f:
         corpus = pickle.load(f)
     with open(os.path.join(PROCESSED_DATA_PATH, "queries.pkl"), "rb") as f:
@@ -55,20 +59,20 @@ def main():
     base_model, base_passage_emb = setup_dense_retriever(corpus, BASE_MODEL, device)
 
     print("\n🔍 Running Base Dense retrieval ...")
-    base_dense_results = run_dense_search(queries, base_model, corpus, base_passage_emb)
+    
+    # run_dense_search expects: (queries, model, passage_embeddings, passage_to_doc_id_map)
+    base_dense_results = run_dense_search(queries, base_model, base_passage_emb, passage_to_doc_id_map)
     all_results['Base Dense (Passages)'] = base_dense_results
 
     # ===================================================================
     # 🎯 3. Fine-Tuned Dense Retriever
     # ===================================================================
-    print(f"\n🏋️ Loading fine-tuned model from '{FINETUNED_MODEL}' ...")
-    fine_tuned_model = SentenceTransformer(FINETUNED_MODEL, device=device)
-
-    print("\nEncoding all passages with fine-tuned model ...")
-    fine_tuned_passage_emb = setup_dense_retriever(corpus, FINETUNED_MODEL, device)
+    print(f"\n🏋️ Setting up and encoding passages with fine-tuned model from '{FINETUNED_MODEL}' ...")
+    # setup_dense_retriever returns (model, passage_embeddings)
+    fine_tuned_model, fine_tuned_passage_emb = setup_dense_retriever(corpus, FINETUNED_MODEL, device)
 
     print("\n🔍 Running Fine-Tuned Dense retrieval ...")
-    fine_tuned_dense_results = run_dense_search(queries, fine_tuned_model, corpus, fine_tuned_passage_emb)
+    fine_tuned_dense_results = run_dense_search(queries, fine_tuned_model, fine_tuned_passage_emb, passage_to_doc_id_map)
     all_results['Fine-Tuned Dense (Passages)'] = fine_tuned_dense_results
 
     # ===================================================================

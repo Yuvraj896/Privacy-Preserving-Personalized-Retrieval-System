@@ -69,6 +69,8 @@ def main():
     # --- 4. Build and Save BM25 Index ---
     # This function is in your retrieval/indexing.py file
     build_bm_index(corpus_docs_list)
+    with open(os.path.join(PROCESSED_DATA_PATH, "passage_to_doc_id.pkl"), "wb") as f:
+        pickle.dump(passage_to_doc_id_map, f)
     
     print("\n--- Data preparation and BM25 indexing complete. ---")
     print("You can now run 'python training/fine_tune.py'")

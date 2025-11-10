@@ -9,11 +9,19 @@ def remove_stopwords_from_text(text, stop_words):
     return [word for word in text.lower().split() if word.isalnum() and word not in stop_words]
 
 def search_bm25(queries, bm25, corpus, k=max([10,20])):
+    # Ensure NLTK stopwords are available. If download fails, continue with empty set.
     try:
         nltk.data.find('corpora/stopwords')
     except LookupError:
-        nltk.download('stopwords')
+        try:
+            nltk.download('stopwords')
+        except Exception:
+            print("Warning: failed to download NLTK stopwords; proceeding without stopword removal.")
+
+    try:
         stop_words = set(nltk.corpus.stopwords.words('english'))
+    except Exception:
+        stop_words = set()
 
     results = {}
     corpus_ids = list(corpus.keys())
